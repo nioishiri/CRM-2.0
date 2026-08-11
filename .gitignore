@@ -23,6 +23,7 @@ pnpm-debug.log*
 .DS_Store
 *.pem
 coverage
+.dev-notes.md
 
 # prisma
 prisma/dev.db
