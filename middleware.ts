@@ -10,6 +10,10 @@ const AUTH_PATHS = ['/login'];
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  console.log('[MIDDLEWARE]', pathname, {
+    hasCookie: !!request.cookies.get(COOKIE_NAME),
+  });
+
   // Разрешаем доступ к API и статическим файлам
   if (
     pathname.startsWith('/api/') ||
@@ -21,6 +25,11 @@ export async function middleware(request: NextRequest) {
   }
 
   const token = request.cookies.get(COOKIE_NAME)?.value;
+
+  console.log('[MIDDLEWARE] token check', {
+    pathname,
+    hasToken: !!token,
+  });
 
   // Нет токена — редирект на login
   if (!token) {

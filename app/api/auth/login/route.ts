@@ -23,9 +23,12 @@ export async function POST(request: NextRequest) {
 
     const { email, password } = parsed.data;
 
+    console.log('[LOGIN-ROUTE] attempting login', { email });
+
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || !user.isActive) {
+      console.log('[LOGIN-ROUTE] user not found or inactive');
       return NextResponse.json(
         { error: 'Неверный email или пароль' },
         { status: 401 }
@@ -34,18 +37,21 @@ export async function POST(request: NextRequest) {
 
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
+      console.log('[LOGIN-ROUTE] invalid password');
       return NextResponse.json(
         { error: 'Неверный email или пароль' },
         { status: 401 }
       );
     }
 
+    console.log('[LOGIN-ROUTE] auth OK, creating session');
     await createSession({
       userId: user.id,
       email: user.email,
       role: user.role,
     });
 
+    console.log('[LOGIN-ROUTE] session created, returning response');
     return NextResponse.json({
       user: {
         id: user.id,

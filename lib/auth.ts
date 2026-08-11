@@ -26,13 +26,26 @@ export async function createSession(payload: SessionPayload): Promise<string> {
     .sign(getSecret());
 
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
+  const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'lax' as const,
     path: '/',
-    maxAge: 60 * 60 * 24, // 24 hours
+    maxAge: 60 * 60 * 24,
+  };
+
+  console.log('[AUTH] createSession cookie set', {
+    name: COOKIE_NAME,
+    tokenPreview: token.substring(0, 15) + '...',
+    options: { ...cookieOptions, token: '[hidden]' },
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      APP_URL: process.env.APP_URL,
+      AUTH_SECRET_LEN: process.env.AUTH_SECRET?.length || 0,
+    },
   });
+
+  cookieStore.set(COOKIE_NAME, token, cookieOptions);
 
   return token;
 }
@@ -40,12 +53,24 @@ export async function createSession(payload: SessionPayload): Promise<string> {
 export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
+
+  console.log('[AUTH] getSession called', {
+    hasCookie: !!token,
+    cookieName: token ? COOKIE_NAME : null,
+    allCookies: cookieStore.getAll().map(c => c.name),
+  });
+
   if (!token) return null;
 
   try {
     const { payload } = await jwtVerify(token, getSecret());
+    console.log('[AUTH] getSession valid', {
+      userId: (payload as any).userId,
+      role: (payload as any).role,
+    });
     return payload as unknown as SessionPayload;
-  } catch {
+  } catch (err) {
+    console.log('[AUTH] getSession invalid token', (err as Error).message);
     return null;
   }
 }
