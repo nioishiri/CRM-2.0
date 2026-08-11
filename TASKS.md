@@ -1,6 +1,6 @@
 # Задачи CRM MVP
 
-## Шаг 0. Анализ и инициализация
+## Шаг 0. Анализ и инициализация ✅
 - [x] Инициализация Git-репозитория
 - [x] Создание .gitignore
 - [x] Создание .dockerignore
@@ -8,78 +8,77 @@
 - [x] Создание docs/ASSUMPTIONS.md
 - [x] Создание TASKS.md
 
-## Шаг 1. Инициализация Next.js проекта
-- [ ] Создание Next.js с App Router, TypeScript
-- [ ] Настройка Tailwind CSS
-- [ ] Установка всех зависимостей
-- [ ] .env.example
-- [ ] README.md (базовая версия)
+## Шаг 1. Инициализация Next.js проекта ✅
+- [x] Создание Next.js с App Router, TypeScript
+- [x] Настройка Tailwind CSS
+- [x] Установка всех зависимостей
+- [x] .env.example
+- [x] README.md
 
-## Шаг 2. Prisma
-- [ ] schema.prisma
-- [ ] Миграции
-- [ ] seed.ts
-- [ ] npm run db:seed
+## Шаг 2. Prisma ✅
+- [x] schema.prisma
+- [x] Миграции
+- [x] seed.ts
+- [x] lib/prisma.ts
 
-## Шаг 3. Docker
-- [ ] Dockerfile
-- [ ] docker-compose.yml
-- [ ] docker-entrypoint.sh
-- [ ] scripts/cron-worker.mjs
-- [ ] scripts/healthcheck.mjs
-- [ ] Health endpoint /api/health
+## Шаг 3. Docker ✅
+- [x] Dockerfile
+- [x] docker-compose.yml
+- [x] docker-entrypoint.sh
+- [x] scripts/cron-worker.mjs
+- [x] scripts/healthcheck.mjs
+- [x] Health endpoint /api/health
 
-## Шаг 4. Аутентификация
-- [ ] lib/auth.ts
-- [ ] /api/auth/login
-- [ ] /api/auth/logout
-- [ ] /api/auth/me
-- [ ] middleware
-- [ ] /login page
+## Шаг 4. Аутентификация ✅
+- [x] lib/auth.ts
+- [x] /api/auth/login
+- [x] /api/auth/logout
+- [x] /api/auth/me
+- [x] middleware
+- [x] /login page
 
-## Шаг 5. Управление пользователями
-- [ ] /admin/users page
-- [ ] CRUD API users
-- [ ] Валидация форм
+## Шаг 5. Управление пользователями ✅
+- [x] /admin/users page
+- [x] CRUD API users
+- [x] Валидация форм
 
-## Шаг 6. Почтовые ящики
-- [ ] lib/crypto.ts
-- [ ] /admin/mailboxes page
-- [ ] API CRUD mailboxes
-- [ ] Проверка подключения
+## Шаг 6. Почтовые ящики ✅
+- [x] lib/crypto.ts
+- [x] /admin/mailboxes page
+- [x] API CRUD mailboxes
+- [x] Проверка подключения
 
-## Шаг 7. Email sync
-- [ ] lib/email-sync.ts
-- [ ] IMAP синхронизация
-- [ ] Создание переписок
+## Шаг 7. Email sync ✅
+- [x] lib/email-sync.ts
+- [x] IMAP синхронизация
+- [x] Создание переписок
 
-## Шаг 8. Отправка писем
-- [ ] lib/email-send.ts
-- [ ] Reply API
-- [ ] Threading headers
+## Шаг 8. Отправка писем ✅
+- [x] lib/email-send.ts
+- [x] Reply API
+- [x] Threading headers
 
-## Шаг 9. Шаблоны
-- [ ] lib/templates.ts
-- [ ] /templates page
-- [ ] API CRUD templates
+## Шаг 9. Шаблоны ✅
+- [x] lib/templates.ts
+- [x] /templates page
+- [x] API CRUD templates
 
-## Шаг 10. SLA и уведомления
-- [ ] lib/sla.ts
-- [ ] lib/notifications.ts
-- [ ] Cron endpoint /api/cron/run
+## Шаг 10. SLA и уведомления ✅
+- [x] lib/sla.ts
+- [x] lib/notifications.ts
+- [x] Cron endpoint /api/cron/run
 
-## Шаг 11. UI менеджера
-- [ ] Dashboard
-- [ ] /conversations
-- [ ] /conversations/[id]
-- [ ] /notifications
+## Шаг 11. UI менеджера ✅
+- [x] Dashboard
+- [x] /conversations
+- [x] /conversations/[id]
+- [x] /notifications
 
-## Шаг 12. Админский дашборд
-- [ ] /admin dashboard
-- [ ] /admin/settings
+## Шаг 12. Админский дашборд ✅
+- [x] /admin dashboard
+- [x] /admin/settings
 
-## Шаг 13. Финальная проверка
-- [ ] npm run build
-- [ ] lint
-- [ ] Исправление ошибок
-- [ ] Финальный README
+## Шаг 13. Финальная проверка ✅
+- [x] npm run build (успешно)
+- [x] ESLint (только предупреждения о deps)
+- [x] README актуализирован

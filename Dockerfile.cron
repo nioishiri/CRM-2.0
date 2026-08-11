@@ -1,0 +1,12 @@
+FROM node:20-slim AS cron-runner
+WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+COPY scripts/cron-worker.mjs /app/scripts/cron-worker.mjs
+RUN chown -R nextjs:nodejs /app
+
+USER nextjs
+
+CMD ["node", "scripts/cron-worker.mjs"]

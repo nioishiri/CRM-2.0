@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+}
+
+enum ConversationStatus {
+  NEW
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  ARCHIVED
+}
+
+enum ConversationPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum TemplateScope {
+  GLOBAL
+  PERSONAL
+}
+
+enum NotificationType {
+  SLA_OVERDUE
+  SYSTEM
+  MAILBOX_ERROR
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(MANAGER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assignedConversations Conversation[]       @relation("AssignedToUser")
+  templates             Template[]           @relation("TemplateCreatedBy")
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+}
+
+model Mailbox {
+  id               String   @id @default(cuid())
+  name             String
+  imapHost         String
+  imapPort         Int      @default(993)
+  imapSecure       Boolean  @default(true)
+  smtpHost         String
+  smtpPort         Int      @default(587)
+  smtpSecure       Boolean  @default(true)
+  username         String
+  encryptedPassword String
+  fromEmail        String
+  fromName         String   @default("")
+  isActive         Boolean  @default(true)
+  lastSyncAt       DateTime?
+  lastError        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  conversations Conversation[]
+  messages     EmailMessage[]
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  conversations Conversation[]
+}
+
+model Conversation {
+  id             String               @id @default(cuid())
+  contactId      String
+  mailboxId      String
+  subject        String
+  status         ConversationStatus   @default(NEW)
+  priority       ConversationPriority @default(NORMAL)
+  assignedToId   String?
+  lastMessageAt  DateTime             @default(now())
+  firstResponseAt DateTime?
+  slaDueAt       DateTime?
+  slaNotifiedAt  DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  contact       Contact        @relation(fields: [contactId], references: [id])
+  mailbox       Mailbox        @relation(fields: [mailboxId], references: [id])
+  assignedTo    User?          @relation("AssignedToUser", fields: [assignedToId], references: [id])
+  messages      EmailMessage[]
+  notifications Notification[]
+}
+
+model EmailMessage {
+  id             String          @id @default(cuid())
+  conversationId String
+  mailboxId      String
+  direction      MessageDirection
+  messageId      String?
+  fromEmail      String
+  fromName       String?
+  toEmail        String?
+  subject        String
+  bodyText       String
+  bodyHtml       String?
+  isFromManager  Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  mailbox      Mailbox      @relation(fields: [mailboxId], references: [id])
+
+  @@unique([mailboxId, messageId])
+}
+
+model Template {
+  id         String        @id @default(cuid())
+  title      String
+  subject    String?
+  body       String
+  scope      TemplateScope @default(PERSONAL)
+  createdById String
+  isActive   Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  createdBy User @relation("TemplateCreatedBy", fields: [createdById], references: [id])
+}
+
+model Notification {
+  id             String           @id @default(cuid())
+  userId         String
+  type           NotificationType
+  title          String
+  body           String
+  conversationId String?
+  readAt         DateTime?
+  createdAt      DateTime         @default(now())
+
+  user         User          @relation(fields: [userId], references: [id])
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+model Setting {
+  key   String @id
+  value Json
+}

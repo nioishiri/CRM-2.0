@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-crm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_db_password}
+      POSTGRES_DB: ${POSTGRES_DB:-crm}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-crm} -d ${POSTGRES_DB:-crm}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-crm}:${POSTGRES_PASSWORD:-change_me_db_password}@db:5432/${POSTGRES_DB:-crm}?schema=public"
+      HOSTNAME: "0.0.0.0"
+      PORT: "3000"
+    healthcheck:
+      test: ["CMD", "node", "scripts/healthcheck.mjs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    command: node scripts/cron-worker.mjs
+    depends_on:
+      app:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      CRON_TARGET_URL: "http://app:3000/api/cron/run"
+      CRON_SECRET: ${CRON_SECRET:-change_me_cron_secret}
+      CRON_INTERVAL_SECONDS: ${CRON_INTERVAL_SECONDS:-300}
+    restart: unless-stopped
+
+volumes:
+  db_data:
