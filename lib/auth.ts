@@ -18,26 +18,32 @@ function getSecret(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
+function isHttps(): boolean {
+  const url = process.env.APP_URL || process.env.PUBLIC_APP_URL || '';
+  return url.startsWith('https://');
+}
+
+export const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: isHttps(),
+  sameSite: 'lax' as const,
+  path: '/',
+  maxAge: 60 * 60 * 24 * 7, // 7 дней
+};
+
 export async function createSession(payload: SessionPayload): Promise<string> {
   const token = await new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('24h')
+    .setExpirationTime('7d')
     .sign(getSecret());
 
   const cookieStore = await cookies();
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
-    path: '/',
-    maxAge: 60 * 60 * 24,
-  };
 
   console.log('[AUTH] createSession cookie set', {
     name: COOKIE_NAME,
     tokenPreview: token.substring(0, 15) + '...',
-    options: { ...cookieOptions, token: '[hidden]' },
+    options: { ...SESSION_COOKIE_OPTIONS, token: '[hidden]' },
     env: {
       NODE_ENV: process.env.NODE_ENV,
       APP_URL: process.env.APP_URL,
@@ -45,7 +51,7 @@ export async function createSession(payload: SessionPayload): Promise<string> {
     },
   });
 
-  cookieStore.set(COOKIE_NAME, token, cookieOptions);
+  cookieStore.set(COOKIE_NAME, token, SESSION_COOKIE_OPTIONS);
 
   return token;
 }
@@ -77,7 +83,7 @@ export async function getSession(): Promise<SessionPayload | null> {
 
 export async function destroySession(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  cookieStore.set(COOKIE_NAME, '', { ...SESSION_COOKIE_OPTIONS, maxAge: 0 });
 }
 
 export async function requireUser(): Promise<SessionPayload> {
