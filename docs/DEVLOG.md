@@ -32,6 +32,32 @@
 ---
 
 ## История
+### 2026-08-12 — Исправление авторизации: cookie не сохранялся на HTTP
+
+**Что сделано:**
+- Добавлена диагностика: логи в auth.ts, middleware.ts, login-роуте, эндпоинт /api/debug
+- По логам подтверждён баг: cookie ставился с `secure: true` на HTTP-сайте
+- Исправлена логика `secure` в `lib/auth.ts`
+- Убрана вся диагностика после подтверждения фикса
+
+**Проблемы:**
+- После логина Set-Cookie приходил, но браузер не сохранял cookie
+- Middleware видел `hasCookie: false` → редирект обратно на /login
+- Причина: `secure: process.env.NODE_ENV === 'production'` → в Docker `true`, но сайт на HTTP
+- RFC 6265: браузер обязан отбрасывать secure-cookie на HTTP-соединении
+
+**Решение:**
+- Заменено `secure: process.env.NODE_ENV === 'production'` на `secure: isHttps()` (проверка протокола APP_URL)
+- Cookie-опции вынесены в `SESSION_COOKIE_OPTIONS` для консистентности
+- JWT и cookie срок увеличен до 7 дней
+
+**Изменённые файлы:**
+- lib/auth.ts — ключевой фикс
+- app/api/auth/login/route.ts — убраны diagnostic-логи
+- middleware.ts — убраны diagnostic-логи
+- app/api/debug/route.ts — удалён
+
+### 2026-08-12 — Первичный запуск Docker, исправление ошибок сборки
 
 ### 2026-08-12 — Первичный запуск Docker, исправление ошибок сборки
 
