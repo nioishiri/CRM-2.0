@@ -31,14 +31,14 @@ async function run() {
         console.log(`[cron] Body: ${text.substring(0, 200)}`);
       }
     } catch (error) {
-      console.log(`[cron] Fetch error:`, (error as Error).message);
+      console.log(`[cron] Fetch error:`, error instanceof Error ? error.message : String(error));
     }
 
     await sleep(INTERVAL);
   }
 }
 
-function sleep(ms: number): Promise<void> {
+function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 

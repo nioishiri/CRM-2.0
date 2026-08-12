@@ -33,6 +33,30 @@
 
 ## История
 
+### 2026-08-12 — Критичный фикс: cron-воркер падал на TS-синтаксисе в .mjs
+
+**Что сделано:**
+- `scripts/cron-worker.mjs`: убран TypeScript-синтаксис из `.mjs`-файла (Node не парсит TS в ESM)
+  - строка 34: `(error as Error).message` → `error instanceof Error ? error.message : String(error)`
+  - строка 41: `function sleep(ms: number): Promise<void)` → `function sleep(ms)`
+
+**Проблемы:**
+- cron-контейнер падал при старте с `SyntaxError: Unexpected identifier 'as'`.
+- Цикл `while(true)` не запускался → `/api/cron/run` никогда не вызывался → `syncAllMailboxes` не выполнялся.
+- В БД `lastSyncAt` = null, `lastSyncedUid` = null; в логах app не было ни одной строки `[SYNC]`.
+- Входящие письма не появлялись в CRM с самого первого запуска — баг был с коммита `502f095`.
+- Проверено: `node --check scripts/cron-worker.mjs` — синтаксис валиден.
+
+**Решение:**
+- `.mjs` должен содержать только чистый JS. После фикса cron стартует и каждые 5 мин вызывает синхронизацию.
+
+**Изменённые файлы:**
+- scripts/cron-worker.mjs — убраны TS-каст/аннотации
+
+**Статус:** код готов; требуется пересборка cron-контейнера (`docker compose up --build -d`). После старта cron через ~15с вызовет `/api/cron/run`, и сработает инкрементальная UID-синхронизация (первые 50 писем).
+
+---
+
 ### 2026-08-12 — Починка IMAP-синхронизации: UID-based вместо \Seen
 
 **Что сделано:**
