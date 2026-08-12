@@ -41,4 +41,4 @@ temp
 .idea
 *.swp
 *.swo
-.vscode/settings.json
+.vscode/settings.json*.tsbuildinfo

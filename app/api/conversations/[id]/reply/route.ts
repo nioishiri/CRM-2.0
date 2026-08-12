@@ -7,8 +7,14 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Авторизация отдельно: её сбой = 401, а не маскировка реальной ошибки под «нет доступа»
   try {
-    const session = await requireUser();
+    await requireUser();
+  } catch {
+    return NextResponse.json({ error: 'Нет доступа' }, { status: 401 });
+  }
+
+  try {
     const body = await request.json();
 
     const conv = await prisma.conversation.findUnique({
@@ -44,7 +50,9 @@ export async function POST(
     }
 
     return NextResponse.json({ ok: true, messageId: result.messageId });
-  } catch {
-    return NextResponse.json({ error: 'Нет доступа' }, { status: 403 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('[reply] Ошибка отправки ответа:', msg);
+    return NextResponse.json({ error: 'Ошибка отправки: ' + msg }, { status: 500 });
   }
 }

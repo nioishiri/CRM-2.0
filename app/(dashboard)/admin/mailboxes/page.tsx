@@ -54,7 +54,7 @@ export default function AdminMailboxesPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imapHost: form.imapHost, imapPort: form.imapPort, imapSecure: form.imapSecure,
           smtpHost: form.smtpHost, smtpPort: form.smtpPort, smtpSecure: form.smtpSecure,
-          username: form.username, password: form.password }),
+          username: form.username, password: form.password, fromEmail: form.fromEmail }),
       });
       setTestResult(await res.json());
     } catch { toast.error('Ошибка проверки'); }
@@ -112,9 +112,13 @@ if (loading) return <p className="text-center py-12">Загрузка...</p>;
               </div>
             </div>
             {testResult && (
-              <div className="p-3 rounded bg-gray-50 text-sm">
+              <div className="p-3 rounded bg-gray-50 text-sm space-y-1">
                 <p>IMAP: {testResult.imap?.ok ? <span className="text-green-600"><CheckCircle className="inline h-4 w-4" /> OK</span> : <span className="text-red-600"><XCircle className="inline h-4 w-4" /> {testResult.imap?.error}</span>}</p>
-                <p>SMTP: {testResult.smtp?.ok ? <span className="text-green-600"><CheckCircle className="inline h-4 w-4" /> OK</span> : <span className="text-red-600"><XCircle className="inline h-4 w-4" /> {testResult.smtp?.error}</span>}</p>
+                <p>SMTP (подключение): {testResult.smtp?.ok ? <span className="text-green-600"><CheckCircle className="inline h-4 w-4" /> OK</span> : <span className="text-red-600"><XCircle className="inline h-4 w-4" /> {testResult.smtp?.error}</span>}</p>
+                {testResult.smtpSend && (
+                  <p>SMTP (тест. отправка): {testResult.smtpSend.ok ? <span className="text-green-600"><CheckCircle className="inline h-4 w-4" /> отправлено — {testResult.smtpSend.response}</span> : <span className="text-red-600"><XCircle className="inline h-4 w-4" /> {testResult.smtpSend.error}</span>}</p>
+                )}
+                {testResult.warning && <p className="text-amber-600">⚠ {testResult.warning}</p>}
               </div>
             )}
             <div className="flex gap-2">
