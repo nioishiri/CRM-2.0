@@ -75,6 +75,7 @@ model Mailbox {
   isActive         Boolean  @default(true)
   lastSyncAt       DateTime?
   lastError        String?
+  lastSyncedUid    Int?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

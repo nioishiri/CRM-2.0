@@ -32,9 +32,11 @@ export async function syncMailbox(mailbox: {
   imapSecure: boolean;
   username: string;
   encryptedPassword: string;
+  lastSyncedUid?: number | null;
 }): Promise<SyncResult> {
   const result: SyncResult = { processed: 0, newConversations: 0, errors: [] };
   let client: ImapFlow | null = null;
+  const INITIAL_BACKFILL = 50;
 
   try {
     const password = decrypt(mailbox.encryptedPassword);
@@ -47,21 +49,56 @@ export async function syncMailbox(mailbox: {
     });
 
     await client.connect();
+    console.log(`[SYNC] ${mailbox.username}: подключено к IMAP`);
+
+    // Статус INBOX без открытия: сколько писем всего и следующий свободный UID.
+    // uidNext-1 = максимальный существующий UID в ящике.
+    const statusInfo = await client.status('INBOX', {
+      messages: true,
+      uidNext: true,
+      unseen: true,
+    });
+    const uidNext = statusInfo.uidNext ?? 0;
+    console.log(
+      `[SYNC] ${mailbox.username}: INBOX messages=${statusInfo.messages ?? '?'}, ` +
+        `uidNext=${uidNext}, unseen=${statusInfo.unseen ?? '?'}`
+    );
+
+    const lastUid = mailbox.lastSyncedUid ?? 0;
+    // Первый запуск (lastUid=0): тянем последние INITIAL_BACKFILL писем.
+    // Инкрементально: всё с UID строго больше lastUid.
+    const fromUid =
+      lastUid > 0 ? lastUid + 1 : Math.max(1, uidNext - INITIAL_BACKFILL);
+    let highestUid = lastUid;
+
     const lock = await client.getMailboxLock('INBOX');
 
     try {
-      const unseenMessages: Array<{
-        uid: number;
-        source: Buffer;
-      }> = [];
-      for await (const msg of client.fetch(
-        { seen: false },
-        { uid: true, source: true }
-      )) {
-        unseenMessages.push(msg as { uid: number; source: Buffer });
+      const fetchedMessages: Array<{ uid: number; source: Buffer }> = [];
+
+      // Тянем только если есть непрочитанные-по-UID сообщения (fromUid < uidNext).
+      if (uidNext > 0 && fromUid < uidNext) {
+        console.log(`[SYNC] ${mailbox.username}: запрос писем uid ${fromUid}:*`);
+        for await (const msg of client.fetch(
+          `${fromUid}:*`,
+          { uid: true, source: true },
+          { uid: true }
+        )) {
+          fetchedMessages.push(msg as { uid: number; source: Buffer });
+        }
+        console.log(
+          `[SYNC] ${mailbox.username}: получено ${fetchedMessages.length} сообщений`
+        );
+      } else {
+        console.log(`[SYNC] ${mailbox.username}: новых писем нет`);
       }
 
-      for (const msg of unseenMessages) {
+      for (const msg of fetchedMessages) {
+        // Подстраховка: не обрабатываем то, что уже синхронизировано.
+        if (msg.uid <= lastUid) continue;
+        // Продвигаем watermark для всех полученных писем, чтобы
+        // не зацикливаться на нечитаемом/битом сообщении.
+        if (msg.uid > highestUid) highestUid = msg.uid;
         try {
           const parsed = await simpleParser(msg.source);
           const messageId = parsed.messageId || null;
@@ -170,10 +207,6 @@ export async function syncMailbox(mailbox: {
         }
       }
 
-      if (unseenMessages.length > 0) {
-        const uids = unseenMessages.map((m) => m.uid);
-        await client.messageFlagsAdd(uids, ['\\Seen'], { uid: true });
-      }
     } finally {
       lock.release();
     }
@@ -182,8 +215,16 @@ export async function syncMailbox(mailbox: {
 
     await prisma.mailbox.update({
       where: { id: mailbox.id },
-      data: { lastSyncAt: new Date(), lastError: null },
+      data: {
+        lastSyncAt: new Date(),
+        lastError: null,
+        lastSyncedUid: highestUid || lastUid,
+      },
     });
+    console.log(
+      `[SYNC] ${mailbox.username}: готово. processed=${result.processed}, ` +
+        `newConversations=${result.newConversations}, lastSyncedUid=${highestUid || lastUid}`
+    );
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
     result.errors.push(`Sync error: ${errMsg}`);
